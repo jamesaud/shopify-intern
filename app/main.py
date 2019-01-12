@@ -2,19 +2,21 @@ import copy
 from flask import Flask, request
 from flask_restplus import Resource, Api, fields, inputs, reqparse
 from flask_pymongo import PyMongo
-
 from bson import json_util
 from datetime import datetime
 import json
 import uuid
-import math
-from flask import abort
 
 app = Flask(__name__)
-api = Api(app)
+api = Api(app, 
+          title='Shopify Internship Application',
+          version='1.0',
+          description='flask rest api concerning an online marketplace')
+
 app.config["MONGO_URI"] = "mongodb://mongo:27017/my-database"
 mongo = PyMongo(app)
 app.config['RESTPLUS_MASK_SWAGGER'] = False
+
 
 def create_id():
     return str(uuid.uuid4())
@@ -99,13 +101,14 @@ class Product(Resource):
 
 class PurchaseProduct(Resource):
 
-    @api.doc(description="Subtracts 1 from the current item count of a particular product", responses={200: "Success", 403: 'Product inventory count is at 0'})
+    @api.doc(description="Subtracts 1 from the current item count of a particular product")
     @api.marshal_with(product_fields)
-
+    @api.response(200, 'Success', product_fields)
+    @api.response(403, 'Product inventory count is at 0')
     def patch(self, product_id):
         product = mongo.db.products.find_one({"id": product_id})
         if product['inventory_count'] == 0:
-            abort(403, 'Inventory count already at 0')
+            api.abort(403, 'Inventory count already at 0')
 
         product = mongo.db.products.find_one_and_update({"id": product_id}, {'$inc': {'inventory_count': -1}})
         product = mongo.db.products.find_one({"id": product_id})
