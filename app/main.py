@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 import uuid
 import math
+from flask import abort
 
 app = Flask(__name__)
 api = Api(app)
@@ -72,32 +73,47 @@ class Products(Resource):
 
     @api.doc(description="Creates a new product")
     @api.expect(product_input_fields, validate=True)
-    @api.response(201, 'Product created')
+    @api.response(201, 'Product created', product_fields)
     def post(self):
-        json = request.get_json()
+        data = request.get_json()
 
         product_id = create_id()
         product = {
-             "title": json["title"],
-             "price": json["price"],
-             "inventory_count": json["inventory_count"],
-             "id": str(product_id)
+             "title": data["title"],
+             "price": data["price"],
+             "inventory_count": data["inventory_count"],
+             "id": product_id
         }
-        _product = dict(product)
         mongo.db.products.insert_one(product)
-        return {'id': str(product_id)}, 201
+        product = mongo.db.products.find_one({"id": product_id}, {'_id': False})
+        return json.loads(json_util.dumps(product)), 201
 
 
 class Product(Resource):
     @api.doc(description="Gets details about a particular product")
-    @api.marshal_with(product_fields, envelope='resource')
+    @api.marshal_with(product_fields)
     def get(self, product_id):
-        user = mongo.db.products.find_one({"id": product_id}, {'_id': False})
-        return json.loads(json_util.dumps(user))
-        
+        product = mongo.db.products.find_one({"id": product_id}, {'_id': False})
+        return json.loads(json_util.dumps(product))
+
+
+class PurchaseProduct(Resource):
+
+    @api.doc(description="Subtracts 1 from the current item count of a particular product", responses={200: "Success", 403: 'Product inventory count is at 0'})
+    @api.marshal_with(product_fields)
+
+    def patch(self, product_id):
+        product = mongo.db.products.find_one({"id": product_id})
+        if product['inventory_count'] == 0:
+            abort(403, 'Inventory count already at 0')
+
+        product = mongo.db.products.find_one_and_update({"id": product_id}, {'$inc': {'inventory_count': -1}})
+        product = mongo.db.products.find_one({"id": product_id})
+        return json.loads(json_util.dumps(product))
 
 api.add_resource(Products, '/products')
 api.add_resource(Product, '/products/<string:product_id>')
+api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
 
 
 if __name__ == "__main__":
