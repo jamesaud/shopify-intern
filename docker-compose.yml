@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  backend:
+    build: .
+    ports:
+      - "80:80"
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+    environment:
+      - FLASK_APP=main.py
+      - FLASK_DEBUG=1
+    command: flask run --host=0.0.0.0 --port=8000
+
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - ./db:/data/db
