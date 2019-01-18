@@ -18,6 +18,7 @@ api = Api(app,
 
 
 PRODUCTION = bool(os.environ.get("PRODUCTION"))   # Production should be set to "true" if the env variable is set
+PORT = int(os.environ.get('PORT', 80))
 
 # Production should be passed in the env var
 # Otherwise configured for Docker in development
@@ -134,4 +135,4 @@ api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
 
 if __name__ == "__main__":
     # Only for debugging while developing
-    app.run(host='0.0.0.0', debug=True, port=80)
+    app.run(host='0.0.0.0', debug=True, port=PORT)
