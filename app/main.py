@@ -6,6 +6,8 @@ from bson import json_util
 from datetime import datetime
 import json
 import uuid
+import os
+
 
 app = Flask(__name__)
 api = Api(app, 
@@ -13,7 +15,11 @@ api = Api(app,
           version='1.0',
           description='flask rest api concerning an online marketplace')
 
-app.config["MONGO_URI"] = "mongodb://mongo:27017/my-database"
+
+
+PRODUCTION = os.environ.get("PRODUCTION", False)
+
+app.config["MONGO_URI"] = os.environ.get('MONGODB_URI', "mongodb://mongo:27017/my-database")       # Production should pass the env var
 mongo = PyMongo(app)
 app.config['RESTPLUS_MASK_SWAGGER'] = False
 
@@ -46,7 +52,7 @@ class Products(Resource):
 
     parser = reqparse.RequestParser()
     parser.add_argument('min_quantity', type=int, help='Require products with at least this quantity', default=0, required=False)
-    parser.add_argument('page', type=inputs.natural,  help='Select a new page starting from 0', required=False, default=0)
+    parser.add_argument('page', type=inputs.natural,  help='Select a new page (starting from 0)', required=False, default=0)
 
     @api.doc(description="Returns details of all products")
     @api.expect(parser, validate=True)
@@ -114,6 +120,11 @@ class PurchaseProduct(Resource):
         product = mongo.db.products.find_one({"id": product_id})
         return json.loads(json_util.dumps(product))
 
+
+class Cart(Resource):
+    pass
+
+
 api.add_resource(Products, '/products')
 api.add_resource(Product, '/products/<string:product_id>')
 api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
@@ -121,4 +132,4 @@ api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
 
 if __name__ == "__main__":
     # Only for debugging while developing
-    app.run(host='0.0.0.0', debug=True, port=80)
+    app.run(host='0.0.0.0', debug=PRODUCTION, port=80)
