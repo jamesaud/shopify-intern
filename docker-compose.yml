@@ -11,7 +11,7 @@ services:
     environment:
       - FLASK_APP=main.py
       - FLASK_DEBUG=1
-      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_URI=mongodb://mongo:27017/my-database
     command: flask run --host=0.0.0.0 --port=8000
 
   mongo:
