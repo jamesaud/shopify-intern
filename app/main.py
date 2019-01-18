@@ -17,7 +17,7 @@ api = Api(app,
 
 
 
-PRODUCTION = os.environ.get("PRODUCTION", False)
+PRODUCTION = bool(os.environ.get("PRODUCTION"))   # Production should be set to "true" if the env variable is set
 
 app.config["MONGO_URI"] = os.environ.get('MONGODB_URI', "mongodb://mongo:27017/my-database")       # Production should pass the env var
 mongo = PyMongo(app)
