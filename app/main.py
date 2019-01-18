@@ -22,7 +22,7 @@ PORT = int(os.environ.get('PORT', 80))
 
 # Production should be passed in the env var
 # Otherwise configured for Docker in development
-app.config["MONGO_URI"] = os.environ.get('MONGODB_URI')    
+app.config["MONGO_URI"] = os.environ['MONGODB_URI']
 mongo = PyMongo(app)
 app.config['RESTPLUS_MASK_SWAGGER'] = False
 
