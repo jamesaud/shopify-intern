@@ -1,6 +1,6 @@
 import copy
 from flask import Flask, request
-from flask_restplus import Resource, Api, fields, inputs, reqparse
+from flask_restplus import Resource, Api, fields, inputs, reqparse, marshal
 from flask_pymongo import PyMongo
 from bson import json_util
 from datetime import datetime
@@ -55,6 +55,21 @@ page_of_products = api.inherit('Page of products', pagination, {
     'items': fields.List(fields.Nested(product_fields))
 })
 
+cart_fields = api.model('Cart', {
+    'id': fields.String(required=True),
+    'products': fields.List(fields.Nested(product_fields))
+})
+
+# General return field for an id
+id_field = api.model('ID', {
+    'id': fields.String(required=True),
+})
+
+product_id_field = api.model('ProductID', {
+    'product_id': fields.String(required=True), 
+})  
+
+
 class Products(Resource):
     PER_PAGE = 10
 
@@ -89,7 +104,7 @@ class Products(Resource):
 
     @api.doc(description="Creates a new product")
     @api.expect(product_input_fields, validate=True)
-    @api.response(201, 'Product created', product_fields)
+    @api.response(201, 'Product created', id_field)
     def post(self):
         data = request.get_json()
 
@@ -101,7 +116,8 @@ class Products(Resource):
              "id": product_id
         }
         mongo.db.products.insert_one(product)
-        product = mongo.db.products.find_one({"id": product_id}, {'_id': False})
+        product = mongo.db.products.find_one({"id": product_id}, {'_id': False, 'id': True})
+    
         return json.loads(json_util.dumps(product)), 201
 
 
@@ -129,13 +145,72 @@ class PurchaseProduct(Resource):
         return json.loads(json_util.dumps(product))
 
 
+
+class Carts(Resource):
+
+    @api.doc(description="Creates a new cart")
+    @api.response(201, 'Cart created', id_field)
+    def post(self):
+        cart_id = create_id()
+        cart = {
+             "id": cart_id,
+             "products": []
+        }
+        mongo.db.carts.insert_one(cart)
+        cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False, 'id': True})
+        return json.loads(json_util.dumps(cart)), 201
+
+
 class Cart(Resource):
-    pass
+
+    def products_info(self, product_ids):
+        """ Given product_ids, pull the info"""
+        # Pull item information to display to user 
+        products = mongo.db.products.find({"id" : {"$in" : product_ids}}, {'_id': False})
+        return products
+
+    @api.doc(description="Gets details about a particular product")
+    @api.marshal_with(cart_fields)
+    def get(self, cart_id):
+        cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False})
+        cart['products'] = self.products_info(cart['products'])
+        return json.loads(json_util.dumps(cart))
+
+    @api.doc(description="Adds item to cart")
+    @api.expect(product_id_field)
+    @api.response(201, 'Successfully added product to cart', cart_fields)
+    @api.response(422, 'Product does not exist')
+    def post(self, cart_id):
+        print("HHHEEERERE")
+        data = request.get_json()
+        product_id = data['product_id']
+
+        if not mongo.db.products.find_one({"id": product_id}):
+            api.abort(422, 'Product does not exist') 
+
+        cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False})
+
+        new_products = cart['products']
+        if product_id not in new_products:
+            new_products.append(product_id)
+        
+        mongo.db.carts.find_one_and_update({"id": cart_id}, 
+                                 {"$set": {"products": new_products}})
+
+        cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False})
+
+        # Pull item information to display to user 
+        cart['products'] = self.products_info(cart['products'])
+        output = json.loads(json_util.dumps(cart))
+        return marshal(output, cart_fields), 201
+
 
 
 api.add_resource(Products, '/products')
 api.add_resource(Product, '/products/<string:product_id>')
 api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
+api.add_resource(Cart, '/carts/<string:cart_id>')
+api.add_resource(Carts, '/carts')
 
 
 if __name__ == "__main__":
