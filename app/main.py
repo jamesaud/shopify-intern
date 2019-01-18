@@ -26,7 +26,7 @@ mongo = PyMongo(app)
 app.config['RESTPLUS_MASK_SWAGGER'] = False
 
 
-def create_id():
+def create_id():   
     return str(uuid.uuid4())
 
 
