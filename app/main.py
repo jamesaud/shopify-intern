@@ -21,7 +21,7 @@ PRODUCTION = bool(os.environ.get("PRODUCTION"))   # Production should be set to 
 
 # Production should be passed in the env var
 # Otherwise configured for Docker in development
-app.config["MONGO_URI"] = os.environ.get('MONGODB_URI', "mongodb://mongo:27017/my-database")       
+app.config["MONGO_URI"] = os.environ.get('MONGODB_URI') + '/my-database'     
 mongo = PyMongo(app)
 app.config['RESTPLUS_MASK_SWAGGER'] = False
 
@@ -134,4 +134,4 @@ api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
 
 if __name__ == "__main__":
     # Only for debugging while developing
-    app.run(host='0.0.0.0', debug=PRODUCTION, port=80)
+    app.run(host='0.0.0.0', debug=not PRODUCTION, port=80)
