@@ -18,6 +18,8 @@ Clone the repository, and simply run the command
 
 The webserver should be running on localhost:8000
 
+Change the default settings in the docker-compose.yml file environment variables.
+
 # Production
 
 It is necessary setup MongoDB on Heroku (mLab MongoDB free plan used). The "MONGODB_URI" config variable (environment variable) will be added automatically on Heroku.
