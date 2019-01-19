@@ -4,7 +4,7 @@ Flask microservice for the shopify internship challenge. Design a REST API that 
 
 # Development tools
 
-Developed in flask with docker. Flask_rest_plus is used (https://flask-restplus.readthedocs.io/en/stable/) for optimal Swagger.io integration (https://flask-restplus.readthedocs.io/en/stable/).
+Developed in flask. Flask_rest_plus is used (https://flask-restplus.readthedocs.io/en/stable/) for optimal Swagger.io integration (https://flask-restplus.readthedocs.io/en/stable/).
 
 MongoDB is used for the database because it facilitated rapid development.
 
