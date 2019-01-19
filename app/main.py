@@ -57,7 +57,8 @@ page_of_products = api.inherit('Page of products', pagination, {
 
 cart_fields = api.model('Cart', {
     'id': fields.String(required=True),
-    'products': fields.List(fields.Nested(product_fields))
+    'products': fields.List(fields.Nested(product_fields)),
+    'total_price': fields.Float(required=True, default=0)
 })
 
 # General return field for an id
@@ -135,16 +136,28 @@ class PurchaseProduct(Resource):
     @api.marshal_with(product_fields)
     @api.response(200, 'Success', product_fields)
     @api.response(403, 'Product inventory count is at 0')
+    @api.response(422, 'Product does not exist')
     def patch(self, product_id):
         product = mongo.db.products.find_one({"id": product_id})
-        if product['inventory_count'] == 0:
+        if product is None:
+            api.abort(422, 'Product does not exist')
+
+        success = self.decrement_inventory_count(product_id)
+        if not success:
             api.abort(403, 'Inventory count already at 0')
 
-        product = mongo.db.products.find_one_and_update({"id": product_id}, {'$inc': {'inventory_count': -1}})
         product = mongo.db.products.find_one({"id": product_id})
         return json.loads(json_util.dumps(product))
 
+    @staticmethod
+    def decrement_inventory_count(product_id):
+        """ Decreases inventory count by 1 for a given product """
+        product = mongo.db.products.find_one({"id": product_id})
 
+        if product['inventory_count'] == 0:
+            return False
+
+        return mongo.db.products.find_one_and_update({"id": product_id}, {'$inc': {'inventory_count': -1}})
 
 class Carts(Resource):
 
@@ -163,17 +176,26 @@ class Carts(Resource):
 
 class Cart(Resource):
 
-    def products_info(self, product_ids):
-        """ Given product_ids, pull the info"""
+    @staticmethod
+    def products_info(product_ids):
+        """ Given a list of product_ids, pull the info from the DB"""
         # Pull item information to display to user 
         products = mongo.db.products.find({"id" : {"$in" : product_ids}}, {'_id': False})
-        return products
+        return list(products)
+
+    @staticmethod
+    def display_cart(cart):
+        """ Returns cart as dictionary to display to the user """
+        cart['products'] = Cart.products_info(cart['products'])
+        print(cart)
+        cart['total_price'] = sum(product['price'] for product in cart['products'])
+        return cart 
 
     @api.doc(description="Gets details about a particular product")
     @api.marshal_with(cart_fields)
     def get(self, cart_id):
         cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False})
-        cart['products'] = self.products_info(cart['products'])
+        cart = self.display_cart(cart)
         return json.loads(json_util.dumps(cart))
 
     @api.doc(description="Adds item to cart")
@@ -181,11 +203,10 @@ class Cart(Resource):
     @api.response(201, 'Successfully added product to cart', cart_fields)
     @api.response(422, 'Product does not exist')
     def post(self, cart_id):
-        print("HHHEEERERE")
         data = request.get_json()
         product_id = data['product_id']
 
-        if not mongo.db.products.find_one({"id": product_id}):
+        if mongo.db.products.find_one({"id": product_id}) is None:
             api.abort(422, 'Product does not exist') 
 
         cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False})
@@ -200,16 +221,41 @@ class Cart(Resource):
         cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False})
 
         # Pull item information to display to user 
-        cart['products'] = self.products_info(cart['products'])
+        cart = self.display_cart(cart)
         output = json.loads(json_util.dumps(cart))
         return marshal(output, cart_fields), 201
 
+class CartCheckout(Resource):
+    
+    @api.doc(description='"Completes" the cart. Any products that are not able to be purchased will remain in the cart (this could happen if a product has 0 inventory count). ')
+    @api.marshal_with(cart_fields)
+    @api.response(200, 'Successfully completed cart', cart_fields)
+    @api.response(422, 'Cart does not exist')
+    def patch(self, cart_id):
+        cart = mongo.db.carts.find_one({"id": cart_id})
+        if cart is None:
+            api.abort(422, 'Cart does not exist') 
 
+        products = cart['products']
+        for product_id in products:
+            success = PurchaseProduct.decrement_inventory_count(product_id)
+            if success:
+                products.remove(product_id)
+
+        # Set to empty cart after checking out, unless an item failed to checkout
+        mongo.db.carts.find_one_and_update({"id": cart_id}, 
+                                 {"$set": {"products": products}})
+
+        cart = mongo.db.carts.find_one({"id": cart_id}, {"_id": False})
+        cart = Cart.display_cart(cart)
+        return json.loads(json_util.dumps(cart))
+        
 
 api.add_resource(Products, '/products')
 api.add_resource(Product, '/products/<string:product_id>')
 api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
 api.add_resource(Cart, '/carts/<string:cart_id>')
+api.add_resource(CartCheckout, '/carts/<string:cart_id>/complete')
 api.add_resource(Carts, '/carts')
 
 
