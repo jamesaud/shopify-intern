@@ -20,7 +20,7 @@ The webserver should be running on localhost:8000
 
 # Production
 
-It is necessary setup MongoDB on Heroku (mLab MongoDB free plan used). The "MONGODB_URI" config variable (environment variable) will be added.
+It is necessary setup MongoDB on Heroku (mLab MongoDB free plan used). The "MONGODB_URI" config variable (environment variable) will be added automatically on Heroku.
 
 Simply push the code to Heroku via
 
