@@ -28,7 +28,7 @@ Simply push the code to Heroku via
 
 `git push heroku master`
 
-or setup automatic deployments with via Github.
+or setup automatic deployments with Github.
 
 # Live Example
 
