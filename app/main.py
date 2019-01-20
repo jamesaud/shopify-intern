@@ -21,12 +21,11 @@ api = Api(app,
           description='flask rest api concerning an online marketplace')
 
 
-
-PRODUCTION = bool(os.environ.get("PRODUCTION"))   # Production should be set to "true" if the env variable is set
+# Environment Variables
+PRODUCTION = os.environ.get("PRODUCTION") == 'True'   # Production should be set to "true" if the env variable is set
 PORT = int(os.environ.get('PORT', 80))
 
-# Production should be passed in the env var
-# Otherwise configured for Docker in development
+# Configuratiton
 app.config["MONGO_URI"] = os.environ['MONGODB_URI']
 mongo = PyMongo(app)
 app.config['RESTPLUS_MASK_SWAGGER'] = False
@@ -36,6 +35,7 @@ def create_id():
     return str(uuid.uuid4())
 
 
+# Models and validation for input/output fields
 product_input_fields = api.model('ProductInput', {
     'title': fields.String(required=True),
     'price': fields.Float(required=True, min=0),
@@ -70,6 +70,8 @@ product_id_field = api.model('ProductID', {
     'product_id': fields.String(required=True), 
 })  
 
+
+# Define Resources
 
 class Products(Resource):
     PER_PAGE = 10
@@ -121,7 +123,6 @@ class Products(Resource):
     
         return json.loads(json_util.dumps(product)), 201
 
-
 class Product(Resource):
     @api.doc(description="Gets details about a particular product")
     @api.marshal_with(product_fields)
@@ -129,9 +130,7 @@ class Product(Resource):
         product = mongo.db.products.find_one({"id": product_id}, {'_id': False})
         return json.loads(json_util.dumps(product))
 
-
 class PurchaseProduct(Resource):
-
     @api.doc(description="Subtracts 1 from the current item count of a particular product")
     @api.marshal_with(product_fields)
     @api.response(200, 'Success', product_fields)
@@ -160,7 +159,6 @@ class PurchaseProduct(Resource):
         return mongo.db.products.find_one_and_update({"id": product_id}, {'$inc': {'inventory_count': -1}})
 
 class Carts(Resource):
-
     @api.doc(description="Creates a new cart")
     @api.response(201, 'Cart created', id_field)
     def post(self):
@@ -173,9 +171,7 @@ class Carts(Resource):
         cart = mongo.db.carts.find_one({"id": cart_id}, {'_id': False, 'id': True})
         return json.loads(json_util.dumps(cart)), 201
 
-
 class Cart(Resource):
-
     @staticmethod
     def products_info(product_ids):
         """ Given a list of product_ids, pull the info from the DB"""
@@ -187,7 +183,6 @@ class Cart(Resource):
     def display_cart(cart):
         """ Returns cart as dictionary to display to the user """
         cart['products'] = Cart.products_info(cart['products'])
-        print(cart)
         cart['total_price'] = sum(product['price'] for product in cart['products'])
         return cart 
 
@@ -226,7 +221,6 @@ class Cart(Resource):
         return marshal(output, cart_fields), 201
 
 class CartCheckout(Resource):
-    
     @api.doc(description='"Completes" the cart. Any products that are not able to be purchased will remain in the cart (this could happen if a product has 0 inventory count). ')
     @api.marshal_with(cart_fields)
     @api.response(200, 'Successfully completed cart', cart_fields)
@@ -250,7 +244,7 @@ class CartCheckout(Resource):
         cart = Cart.display_cart(cart)
         return json.loads(json_util.dumps(cart))
         
-
+# Add to API        
 api.add_resource(Products, '/products')
 api.add_resource(Product, '/products/<string:product_id>')
 api.add_resource(PurchaseProduct, '/products/<string:product_id>/purchase')
@@ -261,4 +255,4 @@ api.add_resource(Carts, '/carts')
 
 if __name__ == "__main__":
     # Only for debugging while developing
-    app.run(host='0.0.0.0', debug=True, port=PORT)
+    app.run(host='0.0.0.0', debug=PRODUCTION, port=PORT)
