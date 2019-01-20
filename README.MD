@@ -36,7 +36,7 @@ or setup automatic deployments with Github.
 
 # Live Example
 
-Swagger API: http://shopify-internship.herokuapp.com/#/default
+Swagger API (might take a second to load on cold boot on Heroku): http://shopify-internship.herokuapp.com/#/default
 
 Please note to see the documentation it needs to be HTTP and not HTTPS. This is due to a CORS issue over HTTPS.
 
