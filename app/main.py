@@ -23,7 +23,7 @@ api = Api(app,
 
 # Environment Variables
 PRODUCTION = os.environ.get("PRODUCTION") == 'True'   # Production should be set to "true" if the env variable is set
-PORT = int(os.environ.get('PORT', 80))
+PORT = int(os.environ.get('PORT', 80))                # 80 by default for local development
 
 # Configuratiton
 app.config["MONGO_URI"] = os.environ['MONGODB_URI']
