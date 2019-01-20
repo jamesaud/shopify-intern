@@ -22,6 +22,8 @@ Change the default settings in the docker-compose.yml file environment variables
 
 # Production
 
+Heroku is used for production.
+
 It is necessary setup MongoDB on Heroku (mLab MongoDB free plan used). The "MONGODB_URI" config variable (environment variable) will be added automatically on Heroku.
 
 Simply push the code to Heroku via
