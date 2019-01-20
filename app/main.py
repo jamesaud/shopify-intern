@@ -255,4 +255,4 @@ api.add_resource(Carts, '/carts')
 
 if __name__ == "__main__":
     # Only for debugging while developing
-    app.run(host='0.0.0.0', debug=PRODUCTION, port=PORT)
+    app.run(host='0.0.0.0', debug=not PRODUCTION, port=PORT)
