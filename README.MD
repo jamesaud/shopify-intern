@@ -39,3 +39,6 @@ Swagger API: http://shopify-internship.herokuapp.com/#/default
 Please note to see the documentation it needs to be HTTP and not HTTPS. This is due to a CORS issue over HTTPS.
 
 However, the API itself is fully functional over HTTPS.
+
+Guide at:
+https://drive.google.com/open?id=1zGQyks5-sYmzQuZUz87tN5QIrvChMKAVEsyIHddTRO8
