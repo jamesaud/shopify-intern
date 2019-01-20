@@ -20,6 +20,8 @@ The webserver should be running on localhost:8000
 
 Change the default settings in the docker-compose.yml file environment variables.
 
+The backend code is contained in a single file, app/main.py https://github.com/jamesaud/shopify-intern/blob/master/app/main.py
+
 # Production
 
 Heroku is used for production.
